@@ -2,7 +2,7 @@ from http.client import HTTPException
 from fastapi import APIRouter, Depends
 from typing import List, Dict
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal
+from app.core.database import get_db
 from app.services.recommendation_service import RecommendationService
 from app.core.logging import get_logger
 
@@ -10,15 +10,7 @@ from app.core.logging import get_logger
 recommendation_router = APIRouter()
 
 #logging configuration
-logger = get_logger(__name__) 
-
-# Dependency to get database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+logger = get_logger(__name__)
 
 @recommendation_router.get("/reviews/summary", response_model=Dict)
 async def get_reviews_summary(user_id: int, db: Session = Depends(get_db)):

@@ -3,22 +3,14 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from app.services.borrow_service import BorrowService
 from app.schemas.borrow_schema import BorrowRequest, BorrowResponse
-from app.core.database import SessionLocal
+from app.core.database import get_db
 from sqlalchemy.orm import Session
 from app.core.logging import get_logger
 
 borrow_router = APIRouter()
 
 #logging configuration
-logger = get_logger(__name__) 
-
-# Dependency to get the database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+logger = get_logger(__name__)
 
 @borrow_router.post("/borrow", response_model=BorrowResponse)
 async def borrow_book(

@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from app.models.review import Review
 from app.services.review_service import ReviewService
 from app.schemas.review_schema import ReviewCreate, ReviewResponse
-from app.core.database import SessionLocal
+from app.core.database import get_db
 from sqlalchemy.orm import Session
 from app.core.logging import get_logger 
 
@@ -11,15 +11,7 @@ from app.core.logging import get_logger
 review_router = APIRouter()
 
 #logging configuration
-logger = get_logger(__name__) 
-
-# Dependency to get the database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+logger = get_logger(__name__)
 
 # Endpoints
 @review_router.post("/reviews", response_model=ReviewResponse)

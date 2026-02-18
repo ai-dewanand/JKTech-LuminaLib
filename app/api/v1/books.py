@@ -4,7 +4,7 @@ from typing import List
 from fastapi.responses import JSONResponse
 from app.services.book_service import BookService
 from app.schemas.book_schema import BookCreate, BookUpdate, BookResponse
-from app.core.database import SessionLocal
+from app.core.database import get_db
 from sqlalchemy.orm import Session
 from app.core.logging import get_logger
 
@@ -13,14 +13,6 @@ books_router = APIRouter()
 
 #Logging configuration
 logger = get_logger(__name__)
-
-# Dependency to get the database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # Endpoints
 @books_router.post("/books", response_model=BookResponse)

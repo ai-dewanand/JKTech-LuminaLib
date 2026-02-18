@@ -9,10 +9,10 @@ from fastapi.security import HTTPAuthorizationCredentials, OAuth2PasswordBearer,
 from app.core.config import settings
 from app.models.user import User 
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal
 from app.services.auth_service import get_password_hash, verify_password, create_access_token
 from app.schemas.user_schema import UserCreate, UserResponse, UserLogin
 from app.core.logging import get_logger
+from app.core.database import get_db
 
 
 # Router for authentication endpoints
@@ -39,13 +39,6 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Security(app_securi
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-# Dependency to get the database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 # Endpoints
