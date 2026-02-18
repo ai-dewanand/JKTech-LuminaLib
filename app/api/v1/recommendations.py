@@ -20,6 +20,17 @@ def get_db():
     finally:
         db.close()
 
+@recommendation_router.get("/reviews/summary", response_model=Dict)
+async def get_reviews_summary(user_id: int, db: Session = Depends(get_db)):
+    try:
+        recommendation_service = RecommendationService(db)
+        summary = await recommendation_service.get_genai_reviews_summary(user_id)
+        logger.info(f"GenAI reviews summary retrieved for User ID {user_id}")
+        return summary
+    except Exception as e:
+        logger.error(f"Error retrieving GenAI reviews summary for User ID {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving reviews summary: {str(e)}")
+
 # Endpoints
 @recommendation_router.get("/recommendations", response_model=List[Dict])
 async def get_recommendations(user_id: int, db: Session = Depends(get_db)):
@@ -31,3 +42,4 @@ async def get_recommendations(user_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error retrieving recommendations for User ID {user_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Error retrieving recommendations for User ID {user_id}, {e}")
+    

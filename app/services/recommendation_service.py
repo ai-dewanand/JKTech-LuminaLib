@@ -209,3 +209,106 @@ class RecommendationService:
         
         # Step 4: Return top N recommendations
         return ranked_recommendations[:limit]
+
+    async def get_genai_reviews_summary(self, user_id: int) -> Dict:
+        # Fetch all reviews by the user
+        user_reviews = self.db.query(Review).filter(Review.user_id == user_id).all()
+        
+        if not user_reviews:
+            return {
+                "user_id": user_id,
+                "total_reviews": 0,
+                "average_rating": None,
+                "summary": "No reviews found for this user.",
+                "sentiment_breakdown": {"positive": 0, "neutral": 0, "negative": 0},
+                "reviewed_books": []
+            }
+        
+        # Collect review data and analyze sentiment
+        reviews_data = []
+        sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
+        total_rating = 0
+        
+        for review in user_reviews:
+            book = self.db.query(Book).filter(Book.id == review.book_id).first()
+            book_title = book.title if book else "Unknown Book"
+            book_author = book.author if book else "Unknown Author"
+            
+            # Analyze sentiment of the comment
+            sentiment = self.analyze_sentiment_textblob(review.comment or "")
+            sentiment_label = sentiment["label"].lower()
+            sentiment_counts[sentiment_label] = sentiment_counts.get(sentiment_label, 0) + 1
+            
+            total_rating += review.rating
+            
+            reviews_data.append({
+                "book_title": book_title,
+                "book_author": book_author,
+                "rating": review.rating,
+                "comment": review.comment or "",
+                "sentiment": sentiment_label
+            })
+        
+        # Calculate average rating
+        average_rating = round(total_rating / len(user_reviews), 2)
+        
+        # Prepare text for AI summarization
+        reviews_text = "\n".join([
+            f"- Book: '{r['book_title']}' by {r['book_author']}, Rating: {r['rating']}/5, Comment: {r['comment']}"
+            for r in reviews_data
+        ])
+        
+        # Generate AI summary
+        try:
+            ai_prompt = f"""Analyze and summarize the following book reviews from a single user. 
+                            Provide insights about their reading preferences, favorite genres/authors, and overall sentiment.
+                            Keep the summary concise (2-3 paragraphs).
+
+                            User Reviews:
+                            {reviews_text}
+
+                            Average Rating: {average_rating}/5
+                            Total Reviews: {len(user_reviews)}
+                            Sentiment Breakdown: {sentiment_counts['positive']} positive, {sentiment_counts['neutral']} neutral, {sentiment_counts['negative']} negative"""
+
+            ai_summary = await self.ai_service.summarize(ai_prompt)
+            
+            if not ai_summary:
+                ai_summary = self._generate_fallback_summary(reviews_data, average_rating, sentiment_counts)
+        except Exception as e:
+            logger.error(f"AI summarization failed: {e}")
+            ai_summary = self._generate_fallback_summary(reviews_data, average_rating, sentiment_counts)
+        
+        return {
+            "user_id": user_id,
+            "total_reviews": len(user_reviews),
+            "average_rating": average_rating,
+            "summary": ai_summary,
+            "sentiment_breakdown": sentiment_counts,
+            "reviewed_books": [
+                {"title": r["book_title"], "author": r["book_author"], "rating": r["rating"]}
+                for r in reviews_data
+            ]
+        }
+
+    def _generate_fallback_summary(self, reviews_data: List[Dict], average_rating: float, sentiment_counts: Dict) -> str:
+        """
+        Generate a basic summary when AI service is unavailable.
+        """
+        total = len(reviews_data)
+        positive_pct = round((sentiment_counts["positive"] / total) * 100) if total > 0 else 0
+        
+        # Find most reviewed authors
+        authors = {}
+        for r in reviews_data:
+            author = r["book_author"]
+            authors[author] = authors.get(author, 0) + 1
+        
+        top_authors = sorted(authors.items(), key=lambda x: x[1], reverse=True)[:3]
+        authors_str = ", ".join([a[0] for a in top_authors]) if top_authors else "various authors"
+        
+        return (
+            f"This user has reviewed {total} book(s) with an average rating of {average_rating}/5. "
+            f"Approximately {positive_pct}% of their reviews express positive sentiment. "
+            f"They have shown interest in books by {authors_str}."
+        )
