@@ -36,7 +36,6 @@ class BookService:
             raise HTTPException(status_code=400, detail="Unsupported file type")
         await self.upload_to_s3(file_bytes, file.filename,file_path,file_bytes=file_bytes)
 
-        # Create a new book record
         new_book = Book(title=title, author=author, description=description, file_path=file_path)
         db.add(new_book)
         db.commit()
@@ -76,8 +75,8 @@ class BookService:
         doc = docx.Document(BytesIO(file_bytes))
         return "\n".join(p.text for p in doc.paragraphs)
 
-    def list_books(self, db: Session) -> List[Book]:
-        books = db.query(Book).all()
+    def list_books(self, db: Session, skip: int = 0, limit: int = 10) -> List[Book]:
+        books = db.query(Book).offset(skip).limit(limit).all()
         return books
 
     def get_book(self, book_id: int, db: Session) -> Book:

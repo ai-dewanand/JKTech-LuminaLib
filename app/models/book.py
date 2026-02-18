@@ -10,7 +10,7 @@ class Book(Base):
     author = Column(String, nullable=False)
     description = Column(String)
     file_path = Column(String, nullable=False)
-    summary = Column(String, nullable=True)  # Field to store the generated summary
+    summary = Column(String, nullable=True) 
     # Relationships
     reviews = relationship("Review", back_populates="book")
     borrows = relationship("Borrow", back_populates="book")

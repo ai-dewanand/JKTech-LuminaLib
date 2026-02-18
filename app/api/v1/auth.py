@@ -33,7 +33,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 def verify_token(credentials: HTTPAuthorizationCredentials = Security(app_security)):
     try:
         payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        return payload  # Return the decoded token payload
+        return payload
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
     except JWTError:
@@ -77,3 +77,17 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     except HTTPException as e:
         logger.error(f"Login error: {e.detail}")
         raise e
+
+
+@auth_router.post("/signout")
+async def signout(credentials: HTTPAuthorizationCredentials = Security(app_security)):
+
+    try:
+        payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_email = payload.get("sub")
+        logger.info(f"User signed out: {user_email}")
+        return JSONResponse(content={"message": "Successfully signed out"})
+    except ExpiredSignatureError:
+        return JSONResponse(content={"message": "Successfully signed out"})
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")

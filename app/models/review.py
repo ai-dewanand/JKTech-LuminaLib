@@ -8,7 +8,7 @@ class Review(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)
     book_id = Column(Integer, ForeignKey('books.id'))
-    rating = Column(Integer, nullable=False)  # Removed minimum and maximum, use Pydantic for validation
+    rating = Column(Integer, nullable=False) 
     comment = Column(String, nullable=True)
 
     # Relationship

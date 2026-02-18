@@ -6,16 +6,15 @@ from fastapi import status
 
 
 class TestBorrowBook:
-    """Test cases for POST /borrow/borrow endpoint."""
+    """Test cases for POST /api/books/{book_id}/borrow endpoint."""
     
     def test_borrow_book_success(self, client, auth_headers, test_user, test_book):
         """Test successful book borrowing."""
         response = client.post(
-            "/borrow/borrow",
+            f"/api/books/{test_book.id}/borrow",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         assert response.status_code == status.HTTP_200_OK
@@ -33,11 +32,10 @@ class TestBorrowBook:
         A properly designed API should return 400/404.
         """
         response = client.post(
-            "/borrow/borrow",
+            f"/api/books/{test_book.id}/borrow",
             headers=auth_headers,
             json={
-                "user_id": 99999,
-                "book_id": test_book.id
+                "user_id": 99999
             }
         )
         # API doesn't properly validate, accepts any user_id
@@ -50,11 +48,10 @@ class TestBorrowBook:
         A properly designed API should return 400/404.
         """
         response = client.post(
-            "/borrow/borrow",
+            "/api/books/99999/borrow",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": 99999
+                "user_id": test_user.id
             }
         )
         # API doesn't properly validate, accepts any book_id
@@ -63,11 +60,10 @@ class TestBorrowBook:
     def test_borrow_already_borrowed_book(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test borrowing an already borrowed book by same user."""
         response = client.post(
-            "/borrow/borrow",
+            f"/api/books/{test_book.id}/borrow",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         # Should return error if book is already borrowed
@@ -77,10 +73,9 @@ class TestBorrowBook:
     def test_borrow_book_without_auth(self, client, test_user, test_book):
         """Test borrowing book without authentication."""
         response = client.post(
-            "/borrow/borrow",
+            f"/api/books/{test_book.id}/borrow",
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
@@ -88,33 +83,19 @@ class TestBorrowBook:
     def test_borrow_book_missing_user_id(self, client, auth_headers, test_book):
         """Test borrowing with missing user_id."""
         response = client.post(
-            "/borrow/borrow",
+            f"/api/books/{test_book.id}/borrow",
             headers=auth_headers,
-            json={
-                "book_id": test_book.id
-            }
-        )
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-    
-    def test_borrow_book_missing_book_id(self, client, auth_headers, test_user):
-        """Test borrowing with missing book_id."""
-        response = client.post(
-            "/borrow/borrow",
-            headers=auth_headers,
-            json={
-                "user_id": test_user.id
-            }
+            json={}
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
     def test_borrow_book_invalid_user_id(self, client, auth_headers, test_book):
         """Test borrowing with invalid user_id format."""
         response = client.post(
-            "/borrow/borrow",
+            f"/api/books/{test_book.id}/borrow",
             headers=auth_headers,
             json={
-                "user_id": "invalid",
-                "book_id": test_book.id
+                "user_id": "invalid"
             }
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -122,27 +103,25 @@ class TestBorrowBook:
     def test_borrow_book_invalid_book_id(self, client, auth_headers, test_user):
         """Test borrowing with invalid book_id format."""
         response = client.post(
-            "/borrow/borrow",
+            "/api/books/invalid/borrow",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": "invalid"
+                "user_id": test_user.id
             }
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 class TestReturnBook:
-    """Test cases for POST /borrow/return endpoint."""
+    """Test cases for POST /api/books/{book_id}/return endpoint."""
     
     def test_return_book_success(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test successful book return."""
         response = client.post(
-            "/borrow/return",
+            f"/api/books/{test_book.id}/return",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         assert response.status_code == status.HTTP_200_OK
@@ -158,11 +137,10 @@ class TestReturnBook:
         Note: API may return 500 due to exception handling bug in borrow_service.
         """
         response = client.post(
-            "/borrow/return",
+            f"/api/books/{test_book.id}/return",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         # Should return error if book is not borrowed
@@ -171,11 +149,10 @@ class TestReturnBook:
     def test_return_nonexistent_user(self, client, auth_headers, test_book):
         """Test returning with non-existent user."""
         response = client.post(
-            "/borrow/return",
+            f"/api/books/{test_book.id}/return",
             headers=auth_headers,
             json={
-                "user_id": 99999,
-                "book_id": test_book.id
+                "user_id": 99999
             }
         )
         assert response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND, status.HTTP_500_INTERNAL_SERVER_ERROR]
@@ -183,11 +160,10 @@ class TestReturnBook:
     def test_return_nonexistent_book(self, client, auth_headers, test_user):
         """Test returning non-existent book."""
         response = client.post(
-            "/borrow/return",
+            "/api/books/99999/return",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": 99999
+                "user_id": test_user.id
             }
         )
         assert response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND, status.HTTP_500_INTERNAL_SERVER_ERROR]
@@ -195,10 +171,9 @@ class TestReturnBook:
     def test_return_book_without_auth(self, client, test_user, test_book):
         """Test returning book without authentication."""
         response = client.post(
-            "/borrow/return",
+            f"/api/books/{test_book.id}/return",
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
@@ -206,22 +181,9 @@ class TestReturnBook:
     def test_return_book_missing_user_id(self, client, auth_headers, test_book):
         """Test returning with missing user_id."""
         response = client.post(
-            "/borrow/return",
+            f"/api/books/{test_book.id}/return",
             headers=auth_headers,
-            json={
-                "book_id": test_book.id
-            }
-        )
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-    
-    def test_return_book_missing_book_id(self, client, auth_headers, test_user):
-        """Test returning with missing book_id."""
-        response = client.post(
-            "/borrow/return",
-            headers=auth_headers,
-            json={
-                "user_id": test_user.id
-            }
+            json={}
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
@@ -232,22 +194,20 @@ class TestReturnBook:
         """
         # First return
         response1 = client.post(
-            "/borrow/return",
+            f"/api/books/{test_book.id}/return",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         assert response1.status_code == status.HTTP_200_OK
         
         # Second return should fail
         response2 = client.post(
-            "/borrow/return",
+            f"/api/books/{test_book.id}/return",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         assert response2.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND, status.HTTP_500_INTERNAL_SERVER_ERROR]
@@ -260,11 +220,10 @@ class TestBorrowWorkflow:
         """Test complete borrow and return workflow."""
         # Step 1: Borrow the book
         borrow_response = client.post(
-            "/borrow/borrow",
+            f"/api/books/{test_book.id}/borrow",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         assert borrow_response.status_code == status.HTTP_200_OK
@@ -273,11 +232,10 @@ class TestBorrowWorkflow:
         
         # Step 2: Return the book
         return_response = client.post(
-            "/borrow/return",
+            f"/api/books/{test_book.id}/return",
             headers=auth_headers,
             json={
-                "user_id": test_user.id,
-                "book_id": test_book.id
+                "user_id": test_user.id
             }
         )
         assert return_response.status_code == status.HTTP_200_OK
@@ -292,11 +250,10 @@ class TestBorrowWorkflow:
         # test_borrow is already created for test_user
         # Try to borrow the same book with test_user2
         response = client.post(
-            "/borrow/borrow",
+            f"/api/books/{test_book.id}/borrow",
             headers=auth_headers,
             json={
-                "user_id": test_user2.id,
-                "book_id": test_book.id
+                "user_id": test_user2.id
             }
         )
         # This behavior depends on business logic - book might be available or unavailable

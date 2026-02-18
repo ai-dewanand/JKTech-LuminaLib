@@ -6,16 +6,15 @@ from fastapi import status
 
 
 class TestSubmitReview:
-    """Test cases for POST /reviews/reviews endpoint."""
+    """Test cases for POST /api/books/{book_id}/reviews endpoint."""
     
     def test_submit_review_success(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test successful review submission (requires prior borrow)."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 5,
                 "comment": "Excellent book!"
             }
@@ -31,11 +30,10 @@ class TestSubmitReview:
     def test_submit_review_without_comment(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test review submission without comment (comment is optional)."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 4
             }
         )
@@ -47,11 +45,10 @@ class TestSubmitReview:
     def test_submit_review_minimum_rating(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test review with minimum rating (1)."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 1,
                 "comment": "Not recommended"
             }
@@ -62,11 +59,10 @@ class TestSubmitReview:
     def test_submit_review_maximum_rating(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test review with maximum rating (5)."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 5,
                 "comment": "Highly recommended!"
             }
@@ -77,11 +73,10 @@ class TestSubmitReview:
     def test_submit_review_rating_below_minimum(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test review with rating below minimum (0)."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 0,
                 "comment": "Invalid rating"
             }
@@ -91,11 +86,10 @@ class TestSubmitReview:
     def test_submit_review_rating_above_maximum(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test review with rating above maximum (6)."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 6,
                 "comment": "Invalid rating"
             }
@@ -105,11 +99,10 @@ class TestSubmitReview:
     def test_submit_review_negative_rating(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test review with negative rating."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": -1,
                 "comment": "Negative rating"
             }
@@ -119,11 +112,10 @@ class TestSubmitReview:
     def test_submit_review_nonexistent_user(self, client, auth_headers, test_book):
         """Test review submission with non-existent user."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": 99999,
-                "book_id": test_book.id,
                 "rating": 4,
                 "comment": "Test comment"
             }
@@ -133,11 +125,10 @@ class TestSubmitReview:
     def test_submit_review_nonexistent_book(self, client, auth_headers, test_user):
         """Test review submission for non-existent book."""
         response = client.post(
-            "/reviews/reviews",
+            "/api/books/99999/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": 99999,
                 "rating": 4,
                 "comment": "Test comment"
             }
@@ -147,10 +138,9 @@ class TestSubmitReview:
     def test_submit_review_without_auth(self, client, test_user, test_book):
         """Test review submission without authentication."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 4,
                 "comment": "Test comment"
             }
@@ -160,23 +150,9 @@ class TestSubmitReview:
     def test_submit_review_missing_user_id(self, client, auth_headers, test_book):
         """Test review submission with missing user_id."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
-                "book_id": test_book.id,
-                "rating": 4,
-                "comment": "Test comment"
-            }
-        )
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-    
-    def test_submit_review_missing_book_id(self, client, auth_headers, test_user):
-        """Test review submission with missing book_id."""
-        response = client.post(
-            "/reviews/reviews",
-            headers=auth_headers,
-            json={
-                "user_id": test_user.id,
                 "rating": 4,
                 "comment": "Test comment"
             }
@@ -186,11 +162,10 @@ class TestSubmitReview:
     def test_submit_review_missing_rating(self, client, auth_headers, test_user, test_book):
         """Test review submission with missing rating."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "comment": "Test comment"
             }
         )
@@ -199,11 +174,10 @@ class TestSubmitReview:
     def test_submit_review_invalid_user_id(self, client, auth_headers, test_book):
         """Test review submission with invalid user_id format."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": "invalid",
-                "book_id": test_book.id,
                 "rating": 4,
                 "comment": "Test comment"
             }
@@ -213,11 +187,10 @@ class TestSubmitReview:
     def test_submit_review_invalid_book_id(self, client, auth_headers, test_user):
         """Test review submission with invalid book_id format."""
         response = client.post(
-            "/reviews/reviews",
+            "/api/books/invalid/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": "invalid",
                 "rating": 4,
                 "comment": "Test comment"
             }
@@ -227,11 +200,10 @@ class TestSubmitReview:
     def test_submit_review_invalid_rating_type(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test review submission with invalid rating type."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": "excellent",
                 "comment": "Test comment"
             }
@@ -241,11 +213,10 @@ class TestSubmitReview:
     def test_submit_review_float_rating(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test review submission with float rating."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 4.5,
                 "comment": "Test comment"
             }
@@ -256,11 +227,10 @@ class TestSubmitReview:
     def test_submit_review_empty_comment(self, client, auth_headers, test_user, test_book, test_borrow):
         """Test review submission with empty comment."""
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 4,
                 "comment": ""
             }
@@ -271,11 +241,10 @@ class TestSubmitReview:
         """Test review submission with a long comment."""
         long_comment = "A" * 10000  # 10000 character comment
         response = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 4,
                 "comment": long_comment
             }
@@ -299,11 +268,10 @@ class TestMultipleReviews:
         
         # First user review
         response1 = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 5,
                 "comment": "Great book!"
             }
@@ -312,11 +280,10 @@ class TestMultipleReviews:
         
         # Second user review
         response2 = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user2.id,
-                "book_id": test_book.id,
                 "rating": 3,
                 "comment": "It was okay"
             }
@@ -335,11 +302,10 @@ class TestMultipleReviews:
         
         # Review first book
         response1 = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 5,
                 "comment": "Loved the first book!"
             }
@@ -348,11 +314,10 @@ class TestMultipleReviews:
         
         # Review second book
         response2 = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book2.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book2.id,
                 "rating": 4,
                 "comment": "Second book was good too"
             }
@@ -363,11 +328,10 @@ class TestMultipleReviews:
         """Test if same user can submit multiple reviews for the same book."""
         # First review
         response1 = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 5,
                 "comment": "First review"
             }
@@ -376,14 +340,58 @@ class TestMultipleReviews:
         
         # Second review for same book by same user
         response2 = client.post(
-            "/reviews/reviews",
+            f"/api/books/{test_book.id}/reviews",
             headers=auth_headers,
             json={
                 "user_id": test_user.id,
-                "book_id": test_book.id,
                 "rating": 3,
                 "comment": "Changed my mind"
             }
         )
         # Business logic may allow or prevent duplicate reviews
         assert response2.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT]
+
+
+class TestBookAnalysis:
+    """Test cases for GET /api/books/{book_id}/analysis endpoint."""
+    
+    def test_get_analysis_with_reviews(self, client, auth_headers, test_user, test_book, test_borrow, test_review):
+        """Test getting analysis for a book with reviews."""
+        response = client.get(
+            f"/api/books/{test_book.id}/analysis",
+            headers=auth_headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["book_id"] == test_book.id
+        assert "total_reviews" in data
+        assert "average_rating" in data
+        assert "summary" in data
+        assert "sentiment_breakdown" in data
+    
+    def test_get_analysis_no_reviews(self, client, auth_headers, test_book):
+        """Test getting analysis for a book with no reviews."""
+        response = client.get(
+            f"/api/books/{test_book.id}/analysis",
+            headers=auth_headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["book_id"] == test_book.id
+        assert data["total_reviews"] == 0
+    
+    def test_get_analysis_nonexistent_book(self, client, auth_headers):
+        """Test getting analysis for non-existent book."""
+        response = client.get(
+            "/api/books/99999/analysis",
+            headers=auth_headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        # Returns error in response body for non-existent book
+        data = response.json()
+        assert "error" in data or data.get("total_reviews") == 0
+    
+    def test_get_analysis_without_auth(self, client, test_book):
+        """Test getting analysis without authentication."""
+        response = client.get(f"/api/books/{test_book.id}/analysis")
+        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]

@@ -13,7 +13,6 @@ review_router = APIRouter()
 #logging configuration
 logger = get_logger(__name__)
 
-# Endpoints
 @review_router.post("/reviews", response_model=ReviewResponse)
 async def submit_review(request: ReviewCreate,
                          db: Session = Depends(get_db),

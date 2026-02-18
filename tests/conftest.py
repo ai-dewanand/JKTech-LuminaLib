@@ -52,11 +52,7 @@ def db_session():
 @pytest.fixture(scope="function")
 def client(db_session):
     """Create a test client with database override."""
-    from app.api.v1.auth import get_db as auth_get_db
-    from app.api.v1.books import get_db as books_get_db
-    from app.api.v1.borrow import get_db as borrow_get_db
-    from app.api.v1.reviews import get_db as reviews_get_db
-    from app.api.v1.recommendations import get_db as recommendations_get_db
+    from app.core.database import get_db
     
     def override_get_db_for_test():
         try:
@@ -64,11 +60,7 @@ def client(db_session):
         finally:
             pass
     
-    app.dependency_overrides[auth_get_db] = override_get_db_for_test
-    app.dependency_overrides[books_get_db] = override_get_db_for_test
-    app.dependency_overrides[borrow_get_db] = override_get_db_for_test
-    app.dependency_overrides[reviews_get_db] = override_get_db_for_test
-    app.dependency_overrides[recommendations_get_db] = override_get_db_for_test
+    app.dependency_overrides[get_db] = override_get_db_for_test
     
     with TestClient(app) as test_client:
         yield test_client

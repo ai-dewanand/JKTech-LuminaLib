@@ -1,9 +1,15 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
+
+class BorrowUserRequest(BaseModel):
+    user_id: int
+
+
 class BorrowRequest(BaseModel):
     user_id: int
     book_id: int
+
 
 class BorrowResponse(BaseModel):
     id: int

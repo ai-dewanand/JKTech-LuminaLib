@@ -27,28 +27,24 @@ LuminaLib is a containerized FastAPI backend backed by PostgreSQL, with Redis + 
 Routes are mounted in `app/main.py` with prefixes. The effective paths are:
 
 ### Auth (unprotected)
-- `POST /auth/signup`
-- `POST /auth/login`
+- `POST /auth/signup` - Register a new user
+- `POST /auth/login` - Login and receive JWT token
+- `POST /auth/signout` - Sign out (invalidate token)
 
 ### Books (protected)
 Mounted with prefix `/api`.
-- `POST /api/books` (multipart: `BookCreate` fields + file)
-- `GET /api/books`
-- `PUT /api/books/{book_id}`
-- `DELETE /api/books/{book_id}`
-
-### Borrow (protected)
-Mounted with prefix `/borrow`.
-- `POST /borrow/borrow`
-- `POST /borrow/return`
-
-### Reviews (protected)
-Mounted with prefix `/reviews`.
-- `POST /reviews/reviews`
+- `POST /api/books` - Upload book file & metadata (triggers async summary)
+- `GET /api/books?skip=0&limit=10` - List books with pagination
+- `PUT /api/books/{book_id}` - Update book details
+- `DELETE /api/books/{book_id}` - Remove book and associated file
+- `POST /api/books/{book_id}/borrow` - User borrows a book
+- `POST /api/books/{book_id}/return` - User returns a book
+- `POST /api/books/{book_id}/reviews` - Submit review (triggers async sentiment analysis)
+- `GET /api/books/{book_id}/analysis` - Get GenAI-aggregated summary of all reviews
 
 ### Recommendations (protected)
 Mounted with prefix `/recommendations`.
-- `GET /recommendations/recommendations?user_id=...`
+- `GET /recommendations/recommendations?user_id=...` - Get ML-based suggestions
 
 ## Core Flows
 

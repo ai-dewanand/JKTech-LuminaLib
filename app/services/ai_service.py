@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 load_dotenv()
 
-AI_MODEL = settings.LLM_MODEL if hasattr(settings, "LLM_MODEL") else "gpt-3.5-turbo"
+AI_MODEL = settings.AI_MODEL or "gpt-3.5-turbo"
 
 
 # OpenAI
@@ -35,9 +35,7 @@ class LLMAgent:
     system_prompt = ""
 
     def __init__(self, system_prompt=system_prompt):
-        """
-        Initialize the llm and the model to be used, based on the configuration in environment
-        """
+
 
         self.system_prompt = system_prompt
     
@@ -112,7 +110,6 @@ class LLMAgent:
 
             combined_query = user_query
 
-            # Log the user query (combined with context if available)
             logger.info(
                 colored(
                     f"{__name__}: {caller_name}, User Prompt: {combined_query}", "green"
@@ -128,7 +125,6 @@ class LLMAgent:
                 
                 return response.get("response", None)
             else:
-                # Run the agent with the combined query
                 result = await self.agent.run(combined_query)
 
             logger.info(

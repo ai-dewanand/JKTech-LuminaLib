@@ -47,10 +47,7 @@ class RecommendationService:
             return {"label": "NEUTRAL", "score": 0.5}
 
     def get_books_with_positive_sentiment(self, user_id: int) -> List[Tuple[Book, float]]:
-        """
-        Get books that user reviewed with positive sentiment.
-        Returns list of (book, sentiment_score) tuples.
-        """
+        
         user_reviews = self.db.query(Review).filter(Review.user_id == user_id).all()
         
         positive_books = []
@@ -75,10 +72,7 @@ class RecommendationService:
         return positive_books
 
     def get_similar_books(self, liked_books: List[Tuple[Book, float]], all_books: List[Book]) -> List[Tuple[Book, float]]:
-        """
-        Find books similar to liked books using TF-IDF and cosine similarity.
-        Returns list of (book, similarity_score) tuples.
-        """
+        
         if not liked_books:
             return []
         
@@ -132,9 +126,7 @@ class RecommendationService:
             return [(book, 0.5) for book in candidate_books]
 
     def rank_by_score(self, books_with_scores: List[Tuple[Book, float]]) -> List[Dict]:
-        """
-        Rank books by their scores and return formatted recommendations.
-        """
+        
         # Sort by score (descending)
         ranked = sorted(books_with_scores, key=lambda x: x[1], reverse=True)
         
@@ -290,6 +282,112 @@ class RecommendationService:
                 for r in reviews_data
             ]
         }
+
+    async def get_book_reviews_analysis(self, book_id: int) -> Dict:
+        """
+        Get GenAI-aggregated summary of all reviews for a specific book.
+        """
+        # Fetch the book
+        book = self.db.query(Book).filter(Book.id == book_id).first()
+        if not book:
+            return {
+                "book_id": book_id,
+                "error": "Book not found"
+            }
+        
+        # Fetch all reviews for this book
+        book_reviews = self.db.query(Review).filter(Review.book_id == book_id).all()
+        
+        if not book_reviews:
+            return {
+                "book_id": book_id,
+                "book_title": book.title,
+                "book_author": book.author,
+                "total_reviews": 0,
+                "average_rating": None,
+                "summary": book.summary or "No reviews yet for this book.",
+                "sentiment_breakdown": {"positive": 0, "neutral": 0, "negative": 0},
+                "reviews": []
+            }
+        
+        # Collect review data and analyze sentiment
+        reviews_data = []
+        sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
+        total_rating = 0
+        
+        for review in book_reviews:
+            # Analyze sentiment of the comment
+            sentiment = self.analyze_sentiment_textblob(review.comment or "")
+            sentiment_label = sentiment["label"].lower()
+            sentiment_counts[sentiment_label] = sentiment_counts.get(sentiment_label, 0) + 1
+            
+            total_rating += review.rating
+            
+            reviews_data.append({
+                "user_id": review.user_id,
+                "rating": review.rating,
+                "comment": review.comment or "",
+                "sentiment": sentiment_label
+            })
+        
+        # Calculate average rating
+        average_rating = round(total_rating / len(book_reviews), 2)
+        
+        # Prepare text for AI summarization
+        reviews_text = "\n".join([
+            f"- Rating: {r['rating']}/5, Comment: {r['comment']}, Sentiment: {r['sentiment']}"
+            for r in reviews_data
+        ])
+        
+        # Generate AI summary
+        try:
+            ai_prompt = f"""Analyze and summarize the following reviews for the book "{book.title}" by {book.author}.
+                            Provide a concise rolling consensus of what readers think about this book.
+                            Include overall sentiment and key themes from the reviews.
+
+                            Book Summary: {book.summary or 'No summary available'}
+
+                            Reviews:
+                            {reviews_text}
+
+                            Average Rating: {average_rating}/5
+                            Total Reviews: {len(book_reviews)}
+                            Sentiment: {sentiment_counts['positive']} positive, {sentiment_counts['neutral']} neutral, {sentiment_counts['negative']} negative"""
+
+            ai_summary = await self.ai_service.summarize(ai_prompt)
+            
+            if not ai_summary:
+                ai_summary = self._generate_book_fallback_summary(book, reviews_data, average_rating, sentiment_counts)
+        except Exception as e:
+            logger.error(f"AI summarization failed for book {book_id}: {e}")
+            ai_summary = self._generate_book_fallback_summary(book, reviews_data, average_rating, sentiment_counts)
+        
+        return {
+            "book_id": book_id,
+            "book_title": book.title,
+            "book_author": book.author,
+            "total_reviews": len(book_reviews),
+            "average_rating": average_rating,
+            "summary": ai_summary,
+            "sentiment_breakdown": sentiment_counts,
+            "reviews": [
+                {"user_id": r["user_id"], "rating": r["rating"], "sentiment": r["sentiment"]}
+                for r in reviews_data
+            ]
+        }
+
+    def _generate_book_fallback_summary(self, book: Book, reviews_data: List[Dict], average_rating: float, sentiment_counts: Dict) -> str:
+        """
+        Generate a basic summary for a book when AI service is unavailable.
+        """
+        total = len(reviews_data)
+        positive_pct = round((sentiment_counts["positive"] / total) * 100) if total > 0 else 0
+        
+        return (
+            f"'{book.title}' by {book.author} has received {total} review(s) with an average rating of {average_rating}/5. "
+            f"Approximately {positive_pct}% of reviews express positive sentiment. "
+            f"{book.summary or ''}"
+        )
 
     def _generate_fallback_summary(self, reviews_data: List[Dict], average_rating: float, sentiment_counts: Dict) -> str:
         """
