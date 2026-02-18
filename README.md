@@ -22,8 +22,8 @@ LuminaLib is an intelligent library system that manages book files, synthesizes 
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/?/LuminaLib-JKTech.git
-cd LuminaLib-JKTech
+git clone https://github.com/ai-dewanand/JKTech-LuminaLib.git
+cd JKTech-LuminaLib
 ```
 
 ### 2. Create a `.env` File
