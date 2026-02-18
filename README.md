@@ -33,14 +33,14 @@ Create a `.env` file in the root directory with the following variables:
 DATABASE_URL=postgresql://user:password@db:5432/luminalib
 
 # JWT Configuration
-SECRET_KEY=prod_secret_key
+SECRET_KEY=CHANGE_THIS_TO_A_STRONG_RANDOM_SECRET
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # AI/LLM Configuration (Options = openai,azureai,custom)
 AI_MODEL=gpt-4o
 LLM_CLIENT=custom
-LLM_API_KEY="apf_ziccpxbwlz78ujwj7uf63uf3"
+LLM_API_KEY=
 
 # AZURE_OPENAI_API_KEY=
 # AZURE_OPENAI_ENDPOINT=
@@ -52,7 +52,7 @@ LLM_API_KEY="apf_ziccpxbwlz78ujwj7uf63uf3"
 # AWS_ACCESS_KEY_ID=
 # AWS_SECRET_ACCESS_KEY=
 ```
-#### Note: The `LLM_API_KEY` is intentionally included for demonstration purposes. If you want to generate your own API key, you can use: [https://apifreellm.com](https://apifreellm.com)
+#### Note: If you want to generate custom LLM API key, you can use: [https://apifreellm.com](https://apifreellm.com)
 
 ### 3. Build and Run the Application
 ```bash
