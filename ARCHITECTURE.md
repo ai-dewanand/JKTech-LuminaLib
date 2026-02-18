@@ -61,7 +61,7 @@ Mounted with prefix `/recommendations`.
 ### 2) Book Upload + Asynchronous Summarization
 1. Client uploads a file + metadata to `POST /api/books`.
 2. `BookService.upload_book` (`app/services/book_service.py`):
-   - stores the file under `data/books/` and persists a `Book` row with `file_path`.
+   - stores the file in s3, if config is avaialble else local path `data/books/` 
    - extracts text from `.pdf` (PyPDF2) or `.docx` (python-docx).
    - enqueues a Celery task: `generate_summary.delay(book_id, extracted_text)`.
 3. Celery worker runs `generate_summary` (`app/workers/tasks.py`):
@@ -103,6 +103,7 @@ Relevant env/config keys (see `app/core/config.py`):
 - `DATABASE_URL`, `SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`
 - `LLM_CLIENT`, `LLM_API_KEY`
 - `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_API_VERSION`
+- `S3_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
 Note: `ai_service.py` currently looks for `settings.LLM_MODEL` but `config.py` defines `AI_MODEL`. If you want the model name to be configurable, align these keys.
 

@@ -7,7 +7,10 @@ from textblob import TextBlob
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+from app.core.logging import get_logger 
 
+#logging configuration
+logger = get_logger(__name__)
 
 class RecommendationService:
     def __init__(self, db: Session):
@@ -40,7 +43,7 @@ class RecommendationService:
             
             return {"label": label, "score": score, "polarity": polarity}
         except Exception as e:
-            print(f"Sentiment analysis error: {e}")
+            logger.error(f"Sentiment analysis error: {e}")
             return {"label": "NEUTRAL", "score": 0.5}
 
     def get_books_with_positive_sentiment(self, user_id: int) -> List[Tuple[Book, float]]:
@@ -124,7 +127,7 @@ class RecommendationService:
             return similar_books
         
         except Exception as e:
-            print(f"Similarity calculation error: {e}")
+            logger.error(f"Similarity calculation error: {e}")
             # Fallback: return candidates with neutral score
             return [(book, 0.5) for book in candidate_books]
 
@@ -149,7 +152,7 @@ class RecommendationService:
         
         return recommendations
 
-    async def get_recommendations(self, user_id: int, limit: int = 10) -> List[Dict]:
+    async def get_recommendations(self, user_id: int, limit: int = 5) -> List[Dict]:
         """
         Main recommendation function following the pattern:
         1. Get books with positive sentiment from user reviews

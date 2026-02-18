@@ -8,6 +8,10 @@ from termcolor import colored
 import requests
 from app.core.config import settings
 import time
+from app.core.logging import get_logger
+
+#logger configuration
+logger = get_logger(__name__)
 
 
 load_dotenv()
@@ -39,7 +43,7 @@ class LLMAgent:
     
             
         if LLM_CLIENT == "openai":
-            print("=== LLM client: OpenAI===")
+            logger.info("=== LLM client: OpenAI===")
 
             model = OpenAIModel(AI_MODEL, api_key=LLM_API_KEY)
             self.agent = Agent(
@@ -48,7 +52,7 @@ class LLMAgent:
             )
 
         elif LLM_CLIENT == "azureai":
-            print("=== LLM client: Azure OpenAI===")
+            logger.info("=== LLM client: Azure OpenAI===")
             client = AsyncAzureOpenAI(
                 azure_endpoint=AZURE_OPENAI_ENDPOINT,
                 api_version=AZURE_API_VERSION,
@@ -79,19 +83,19 @@ class LLMAgent:
                 return response.json()
             elif retry > 0:
                 time.sleep(25)
-                print(colored(f"Custom API error (status {response.status_code}): {response.text}. Retrying...", "red"))
+                logger.error(f"Custom API error (status {response.status_code}): {response.text}. Retrying...")
                 return self.custom_agent_response(query, retry=retry-1)
             else:
-                print(colored(f"Custom API error (status {response.status_code}): {response.text}. No more retries.", "red"))
+                logger.error(f"Custom API error (status {response.status_code}): {response.text}. No more retries.")
                 self.agent=response
                 return response.json()
         except Exception as e:
             if retry > 0:
                 time.sleep(25)
-                print(colored(f"Custom API request failed with exception: {e}. Retrying...", "red"))
+                logger.error(f"Custom API request failed with exception: {e}. Retrying...")
                 return self.custom_agent_response(query, retry=retry-1)
             else:
-                print(colored(f"Custom API request failed with exception: {e}. No more retries.", "red"))
+                logger.error(f"Custom API request failed with exception: {e}. No more retries.")
                 self.agent=str(e)
                 return {"response": None}
 
@@ -99,7 +103,7 @@ class LLMAgent:
     async def generate_answer(self, user_query):
         try:
             caller_name = inspect.stack()[1].function
-            print(
+            logger.info(
                 colored(
                     f"{__name__}: {caller_name}, System Prompt: {self.system_prompt}",
                     "magenta",
@@ -109,14 +113,14 @@ class LLMAgent:
             combined_query = user_query
 
             # Log the user query (combined with context if available)
-            print(
+            logger.info(
                 colored(
                     f"{__name__}: {caller_name}, User Prompt: {combined_query}", "green"
                 )
             )
             if LLM_CLIENT not in ["openai", "azureai"]:
                 response = self.custom_agent_response(combined_query)
-                print(
+                logger.info(
                     colored(
                         f"{__name__}: {caller_name}, Agent Response: {response}", "yellow"
                     )
@@ -127,7 +131,7 @@ class LLMAgent:
                 # Run the agent with the combined query
                 result = await self.agent.run(combined_query)
 
-            print(
+            logger.info(
                 colored(
                     f"{__name__}: {caller_name}, Agent Response: {result.data}", "yellow"
                 )
@@ -135,17 +139,21 @@ class LLMAgent:
 
             return result.data
         except Exception as e:
-            print(colored(f"Error in generate_answer: {e}", "red"))
+            logger.error(f"Error in generate_answer: {e}")
             return None
 
 class AIService:
     async def summarize(self, text: str) -> str:
-        system_prompt = f"""You are an expert summarization assistant.
-                            Return only the summary of the user's text.
-                            Do not add titles, labels, bullet points, explanations, or extra commentary.
-        {text}"""
-        agent = LLMAgent(system_prompt=system_prompt)
-        answer = await agent.generate_answer("")
-        return answer
+        try:
+            system_prompt = f"""You are an expert summarization assistant.
+                                Return only the summary of the user's text.
+                                Do not add titles, labels, bullet points, explanations, or extra commentary.
+            {text}"""
+            agent = LLMAgent(system_prompt=system_prompt)
+            answer = await agent.generate_answer("")
+            return answer
+        except Exception as e:
+            logger.error(f"Error in AIService.summarize: {e}")
+            raise Exception(f"Error in AIService.summarize: {e}")
 
         

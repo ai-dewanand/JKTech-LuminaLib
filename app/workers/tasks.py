@@ -4,6 +4,10 @@ import asyncio
 from app.models import Book, Review, Borrow, User
 from app.services.ai_service import AIService
 from app.core.database import SessionLocal
+from app.core.logging import get_logger
+
+#logging configuration
+logger = get_logger(__name__)
 
 # Initialize Celery app
 celery_app = Celery(
@@ -19,14 +23,14 @@ def generate_summary(book_id: int, content: str):
         # AIService.summarize is async, so we need to run it with asyncio
         summary = asyncio.run(AIService().summarize(content))
         if summary:
-            print(f"Generated summary for book {book_id}: {summary}")
+            logger.info(f"Generated summary for book {book_id}: {summary}")
             book = db.query(Book).filter(Book.id == book_id).first()
             if book:
                 book.summary = summary
                 db.commit()
         else:
-            print(f"Failed to generate summary for book {book_id}")
+            logger.warning(f"Failed to generate summary for book {book_id}")
     except Exception as e:
-        print(f"Error generating summary for book {book_id}: {e}")
+        logger.error(f"Error generating summary for book {book_id}: {e}")
     finally:
         db.close()

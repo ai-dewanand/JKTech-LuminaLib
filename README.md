@@ -1,6 +1,6 @@
 # LuminaLib
 
-LuminaLib is an intelligent library system that manages book files, synthesizes reader sentiment, and provides personalized recommendations using machine learning.
+LuminaLib is an intelligent library system that manages book files, synthesizes reader sentiment, and provides personalized recommendations using Gen AI or LLM.
 
 ---
 
@@ -29,11 +29,30 @@ cd JKTech-LuminaLib
 ### 2. Create a `.env` File
 Create a `.env` file in the root directory with the following variables:
 ```
-SECRET_KEY=your_secret_key
-POSTGRES_USER=user
-POSTGRES_PASSWORD=password
-POSTGRES_DB=luminalib
+# Database Configuration
+DATABASE_URL=postgresql://user:password@db:5432/luminalib
+
+# JWT Configuration
+SECRET_KEY=prod_secret_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# AI/LLM Configuration (Options = openai,azureai,custom)
+AI_MODEL=gpt-4o
+LLM_CLIENT=custom
+LLM_API_KEY="apf_ziccpxbwlz78ujwj7uf63uf3"
+
+# AZURE_OPENAI_API_KEY=
+# AZURE_OPENAI_ENDPOINT=
+# AZURE_API_VERSION=
+# ENABLE_AGENT=
+
+## S3 Configuration
+# S3_BUCKET_NAME=
+# AWS_ACCESS_KEY_ID=
+# AWS_SECRET_ACCESS_KEY=
 ```
+#### Note: The `LLM_API_KEY` is intentionally included for demonstration purposes. If you want to generate your own API key, you can use: [https://apifreellm.com](https://apifreellm.com)
 
 ### 3. Build and Run the Application
 ```bash
@@ -43,9 +62,13 @@ docker-compose up --build
 ### 4. Access the Application
 - API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 
----
+### Run Test Cases 
+```bash
+pytest -v
+```
 
 ## Project Structure
+```
 LuminaLib-JKTech/
 ├── ARCHITECTURE.md
 ├── Dockerfile
@@ -110,10 +133,7 @@ LuminaLib-JKTech/
 │   └── books/                        # Book data storage
 │
 ├── tests/                            # Test files
-│
-└── uploaded_books/                   # Uploaded book files
-
----
+```
 
 ## Developer Contact Details
 Email = ai.dewanand@gmail.com

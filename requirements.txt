@@ -22,6 +22,8 @@ httpx
 textblob
 scikit-learn
 numpy
+boto3
+botocore
 
 # Testing dependencies
 pytest>=7.4.0

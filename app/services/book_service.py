@@ -9,6 +9,12 @@ from PyPDF2 import PdfReader
 import docx
 from app.models.borrow import Borrow
 from app.models.review import Review
+import boto3
+from botocore.exceptions import NoCredentialsError
+from app.core.logging import get_logger
+
+#logging configuration
+logger = get_logger(__name__)
 
 # Directory for storing uploaded books
 BOOKS_DIR = "data/books"
@@ -26,10 +32,9 @@ class BookService:
         elif file.filename.endswith(".docx"):
             text = await self.extract_text_from_docx(file_bytes)
         else:
+            logger.error(f"Unsupported file type: {file.filename}")
             raise HTTPException(status_code=400, detail="Unsupported file type")
-        # Save the file locally
-        with open(file_path, "wb") as f:
-            f.write(file_bytes)
+        await self.upload_to_s3(file_bytes, file.filename,file_path,file_bytes=file_bytes)
 
         # Create a new book record
         new_book = Book(title=title, author=author, description=description, file_path=file_path)
@@ -39,6 +44,29 @@ class BookService:
         generate_summary.delay(new_book.id, text)
 
         return new_book
+    
+    async def upload_to_s3(self,file_data, objectKey, file_path,file_bytes=None):
+        s3_bucket_name = os.getenv("S3_BUCKET_NAME")
+        
+        try:
+            s3_client = boto3.client("s3")
+            response = s3_client.put_object(Bucket=s3_bucket_name, Key=objectKey, Body=file_data)
+        except Exception as e:
+            logger.error("Unable to locate credentials from secret manager")
+            try:
+                s3_client = boto3.client('s3', aws_access_key_id=os.getenv("aws_access_key_id"),
+                                        aws_secret_access_key=os.getenv("aws_secret_access_key"))
+                response = s3_client.put_object(Bucket=s3_bucket_name, Key=objectKey, Body=file_data)
+            except Exception as e:
+                 # Save the file locally
+                logger.error(f"Unable to locate credentials from environment variables. Saving file locally. Error: {e}")
+                with open(file_path, "wb") as f:
+                    f.write(file_bytes)
+        except Exception as e:
+            logger.error(f"Error uploading file to S3: {e}")
+            raise HTTPException(status_code=500, detail="Error uploading file to S3")
+        
+
     
     async def extract_text_from_pdf(self, file_bytes):
         reader = PdfReader(BytesIO(file_bytes))
@@ -55,6 +83,7 @@ class BookService:
     def get_book(self, book_id: int, db: Session) -> Book:
         book = db.query(Book).filter(Book.id == book_id).first()
         if not book:
+            logger.warning(f"Book with ID {book_id} not found")
             raise HTTPException(status_code=404, detail="Book not found")
         return book
 
@@ -87,6 +116,7 @@ class BookService:
         has_reviews = db.query(Review.id).filter(Review.book_id == book_id).first() is not None
         has_borrows = db.query(Borrow.id).filter(Borrow.book_id == book_id).first() is not None
         if has_reviews or has_borrows:
+            logger.warning(f"Attempt to delete book ID {book_id} which has related borrows or reviews")
             raise HTTPException(
                 status_code=409,
                 detail="Book cannot be deleted because it has related borrows or reviews",
@@ -100,5 +130,4 @@ class BookService:
             try:
                 os.remove(file_path)
             except OSError:
-                # If file deletion fails, keep DB deletion as the source of truth.
-                pass
+                logger.error(f"Error deleting file at {file_path}")
